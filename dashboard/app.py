@@ -166,10 +166,19 @@ if view_mode == "Operations (Real-time)":
         st.subheader("Demand Curve (24h)")
         st.caption("Peak traffic identification for resource allocation.")
         
-        demand_sql = """
-        SELECT HOUR(started_at) as hr, member_casual, COUNT(*) as trips 
-        FROM fact_trips GROUP BY 1, 2 ORDER BY 1
-        """
+        if IS_CLOUD:
+            # SQLite Syntax
+            demand_sql = """
+            SELECT CAST(strftime('%H', started_at) AS INTEGER) as hr, member_casual, COUNT(*) as trips 
+            FROM fact_trips GROUP BY 1, 2 ORDER BY 1
+            """
+        else:
+            # MySQL Syntax
+            demand_sql = """
+            SELECT HOUR(started_at) as hr, member_casual, COUNT(*) as trips 
+            FROM fact_trips GROUP BY 1, 2 ORDER BY 1
+            """
+            
         df_demand = fetch_data(demand_sql)
         
         fig_area = px.area(
@@ -194,14 +203,37 @@ elif view_mode == "Strategic (Historical)":
     st.markdown("Long-term patterns to inform quarterly planning and fleet expansion.")
     
     # Aggregation for Day of Week
-    # Note: Using MySQL's DAYNAME
-    dow_sql = """
-    SELECT DAYNAME(started_at) as day_name, COUNT(*) as trips 
-    FROM fact_trips 
-    GROUP BY 1 
-    ORDER BY FIELD(day_name, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
-    """
+    if IS_CLOUD:
+        # SQLite Syntax (Manual Day Mapping)
+        dow_sql = """
+        SELECT 
+            CASE CAST(strftime('%w', started_at) AS INTEGER)
+                WHEN 0 THEN 'Sunday'
+                WHEN 1 THEN 'Monday'
+                WHEN 2 THEN 'Tuesday'
+                WHEN 3 THEN 'Wednesday'
+                WHEN 4 THEN 'Thursday'
+                WHEN 5 THEN 'Friday'
+                WHEN 6 THEN 'Saturday'
+            END as day_name,
+            COUNT(*) as trips
+        FROM fact_trips
+        GROUP BY 1
+        """
+    else:
+        # MySQL Syntax
+        dow_sql = """
+        SELECT DAYNAME(started_at) as day_name, COUNT(*) as trips 
+        FROM fact_trips 
+        GROUP BY 1 
+        """
+        
     df_dow = fetch_data(dow_sql)
+    
+    # Python-side sorting for robustness (MySQL 'ORDER BY FIELD' is specific, this works for both)
+    day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    df_dow['day_name'] = pd.Categorical(df_dow['day_name'], categories=day_order, ordered=True)
+    df_dow = df_dow.sort_values('day_name')
     
     col1, col2 = st.columns([2, 1])
     
