@@ -13,7 +13,7 @@ This isn't just a dashboard—it's a full "Data Pipeline" that mimics the real-w
 
 ---
 
-## How it Works (Plain English)
+## How it Works 
 I built three main components to solve this problem:
 
 ### 1. The "Collector" (ETL Pipeline)
