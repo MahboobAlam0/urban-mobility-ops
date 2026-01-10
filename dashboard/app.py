@@ -92,7 +92,8 @@ with st.sidebar:
     st.markdown("---")
     
     # Debug Info (Helpful for Cloud Deployment)
-    with st.expander("Connection Debug info"):
+    # Debug Info (Helpful for Cloud Deployment)
+    with st.expander("🔌 System Status"):
         st.write(f"**Mode:** {'Cloud (SQLite)' if IS_CLOUD else 'Local (MySQL)'}")
         st.write(f"**CWD:** `{os.getcwd()}`")
         st.write(f"**DB Path:** `{DB_PATH_DEBUG}`")

@@ -16,11 +16,25 @@ logging.basicConfig(
 )
 logger = logging.getLogger("CitiBike_ETL")
 
-class Config:
-    BASE_URL = "https://s3.amazonaws.com/tripdata"
-    CHUNK_SIZE = 100000
-    # In production, this would be in env vars
-    DEFAULT_DB = "mysql+pymysql://root:toor@localhost:3306/citibike"
+# --- CONFIGURATION (STRATEGY PATTERN) ---
+class CityConfig:
+    """Strategy for Multi-City Support (NYC, London, etc.)"""
+    def __init__(self, city_code, base_url, chunk_size, default_db):
+        self.CITY_CODE = city_code
+        self.BASE_URL = base_url
+        self.CHUNK_SIZE = chunk_size
+        self.DEFAULT_DB = default_db
+
+# Configuration for NYC CitiBike
+NYC_CONFIG = CityConfig(
+    city_code="NYC",
+    base_url="https://s3.amazonaws.com/tripdata",
+    chunk_size=100000,
+    default_db="mysql+pymysql://root:toor@localhost:3306/citibike"
+)
+
+# Active Strategy (Switch this to change target city)
+Config = NYC_CONFIG
 
 class ETLException(Exception):
     pass
