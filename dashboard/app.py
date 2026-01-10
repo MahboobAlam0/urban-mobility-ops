@@ -9,12 +9,21 @@ ST_PAGE_TITLE = "CitiBike Ops Center"
 
 import os
 
-if os.path.exists("citibike.db"):
-    DB_CONN = "sqlite:///citibike.db"
-    IS_CLOUD = True
-else:
-    DB_CONN = "mysql+pymysql://root:toor@localhost:3306/citibike"
-    IS_CLOUD = False
+def get_database_url():
+    possible_paths = [
+        "citibike.db",                # If detected from root CWD
+        "../citibike.db",             # If CWD is dashboard/
+        "UrbanMobility_ETL/citibike.db" # Unusual structure
+    ]
+    
+    for p in possible_paths:
+        if os.path.exists(p):
+            return f"sqlite:///{p}", True, os.path.abspath(p)
+            
+    # Fallback to Local MySQL if no file found (Layout: Local Dev)
+    return "mysql+pymysql://root:toor@localhost:3306/citibike", False, "Local MySQL"
+
+DB_CONN, IS_CLOUD, DB_PATH_DEBUG = get_database_url()
 
 st.set_page_config(
     page_title=ST_PAGE_TITLE,
