@@ -81,7 +81,14 @@ with st.sidebar:
     st.header("Dashboard Controls")
     view_mode = st.selectbox("View Perspective", ["Operations (Real-time)", "Strategic (Historical)"])
     st.markdown("---")
-    st.caption(f"Connected to: `{DB_CONN.split('@')[1]}`")
+    
+    # Debug Info (Helpful for Cloud Deployment)
+    with st.expander("Connection Debug info"):
+        st.write(f"**Mode:** {'Cloud (SQLite)' if IS_CLOUD else 'Local (MySQL)'}")
+        st.write(f"**CWD:** `{os.getcwd()}`")
+        st.write(f"**DB Path:** `{DB_PATH_DEBUG}`")
+        if not IS_CLOUD and "sqlite" not in DB_CONN:
+             st.warning("Using Local MySQL. This will FAIL on Streamlit Cloud.")
 
 # --- MAIN LAYOUT ---
 st.title(f"{ST_PAGE_TITLE}")
