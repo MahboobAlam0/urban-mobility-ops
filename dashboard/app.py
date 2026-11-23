@@ -20,8 +20,9 @@ def get_database_url():
         if os.path.exists(p):
             return f"sqlite:///{p}", True, os.path.abspath(p)
             
-    # Fallback to Local MySQL if no file found (Layout: Local Dev)
-    return "mysql+pymysql://root:toor@localhost:3306/citibike", False, "Local MySQL"
+    # Fallback to Local MySQL if no file found (Layout: Local Dev).
+    # Same variable and default as the pipeline scripts.
+    return os.environ.get("CITIBIKE_DB_URL", "mysql+pymysql://root:toor@localhost:3306/citibike"), False, "Local MySQL"
 
 DB_CONN, IS_CLOUD, DB_PATH_DEBUG = get_database_url()
 
@@ -88,7 +89,7 @@ def fetch_data(query):
 # --- SIDEBAR ---
 with st.sidebar:
     st.header("Dashboard Controls")
-    view_mode = st.selectbox("View Perspective", ["Operations (Real-time)", "Strategic (Historical)"])
+    view_mode = st.selectbox("View Perspective", ["Operations (Station flow)", "Strategic (Historical)"])
     st.markdown("---")
     
     # Debug Info (Helpful for Cloud Deployment)
@@ -103,21 +104,42 @@ with st.sidebar:
 # --- MAIN LAYOUT ---
 st.title(f"{ST_PAGE_TITLE}")
 
+# The data is a historical trip file loaded by the pipeline, not a live feed,
+# so say which period it covers.
+period = fetch_data("SELECT MIN(started_at) AS first_trip, MAX(started_at) AS last_trip FROM fact_trips")
+if not period.empty and period["first_trip"][0] is not None:
+    st.caption(f"Historical trip data from {str(period['first_trip'][0])[:10]} to "
+               f"{str(period['last_trip'][0])[:10]}. Not a live feed.")
+
 # 1. KPI SECTION (Top Row)
-if view_mode == "Operations (Real-time)":
-    # Mock aggregation for KPIs
-    metrics_sql = "SELECT count(*) as total, avg(duration_seconds)/60 as avg_dur FROM fact_trips"
+if view_mode == "Operations (Station flow)":
+    # KPIs computed from the loaded trips (no hard-coded values)
+    metrics_sql = """
+    SELECT count(*) as total,
+           avg(duration_seconds)/60 as avg_dur,
+           100.0 * avg(CASE WHEN member_casual = 'member' THEN 1 ELSE 0 END) as member_share
+    FROM fact_trips
+    """
     metrics = fetch_data(metrics_sql)
+    # Stations that appear as the start or end of at least one trip
+    stations_sql = """
+    SELECT COUNT(*) as active FROM (
+        SELECT start_station_id AS station_id FROM fact_trips
+        UNION
+        SELECT end_station_id FROM fact_trips
+    ) s
+    """
+    stations = fetch_data(stations_sql)
     
     k1, k2, k3, k4 = st.columns(4)
     with k1:
-        st.metric("Total Trips", f"{metrics['total'][0]:,.0f}", delta="24h Volume")
+        st.metric("Total Trips", f"{metrics['total'][0]:,.0f}")
     with k2:
-        st.metric("Avg Duration", f"{metrics['avg_dur'][0]:.1f} min", delta="-0.2 min")
+        st.metric("Avg Duration", f"{metrics['avg_dur'][0]:.1f} min")
     with k3:
-        st.metric("Active Stations", "784", delta="100% Operational")
+        st.metric("Active Stations", f"{stations['active'][0]:,.0f}", help="Stations with at least one trip start or end")
     with k4:
-        st.metric("Health Score", "98.2%", delta="Optimal")
+        st.metric("Member Share", f"{metrics['member_share'][0]:.0f}%", help="Share of trips taken by members rather than casual riders")
     
     st.markdown("---")
 

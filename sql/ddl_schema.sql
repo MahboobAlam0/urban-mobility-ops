@@ -29,8 +29,9 @@ CREATE TABLE IF NOT EXISTS fact_trips (
     end_station_id VARCHAR(50),
     duration_seconds DOUBLE,
     member_casual VARCHAR(20),
-    load_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    load_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Indexes are declared here rather than with CREATE INDEX: MySQL has no
+    -- CREATE INDEX IF NOT EXISTS, so a separate statement fails on every re-run.
+    INDEX idx_fact_start_time (started_at),
+    INDEX idx_fact_start_station (start_station_id)
 );
--- Indexes
-CREATE INDEX idx_fact_start_time ON fact_trips(started_at);
-CREATE INDEX idx_fact_start_station ON fact_trips(start_station_id);

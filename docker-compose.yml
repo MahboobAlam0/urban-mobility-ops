@@ -1,16 +1,18 @@
 version: '3.8'
+# Local MySQL for the pipeline. The SQL in sql/ is MySQL-specific, and the
+# scripts' default connection string (CITIBIKE_DB_URL) points here:
+# mysql+pymysql://root:toor@localhost:3306/citibike
 services:
-  postgres:
-    image: postgres:15
+  mysql:
+    image: mysql:8.0
     container_name: citibike_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: citibike
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-toor}
+      MYSQL_DATABASE: citibike
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
 
 volumes:
-  postgres_data:
+  mysql_data:

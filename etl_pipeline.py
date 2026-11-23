@@ -30,7 +30,9 @@ NYC_CONFIG = CityConfig(
     city_code="NYC",
     base_url="https://s3.amazonaws.com/tripdata",
     chunk_size=100000,
-    default_db="mysql+pymysql://root:toor@localhost:3306/citibike"
+    # Same variable and default as execute_sql_scripts.py, tools/migrate_to_sqlite.py
+    # and dashboard/app.py. Set CITIBIKE_DB_URL to use real credentials.
+    default_db=os.environ.get("CITIBIKE_DB_URL", "mysql+pymysql://root:toor@localhost:3306/citibike")
 )
 
 # Active Strategy (Switch this to change target city)

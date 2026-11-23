@@ -46,3 +46,24 @@ WHERE start_station_id IS NOT NULL
         CAST(started_at AS DATETIME),
         CAST(ended_at AS DATETIME)
     ) > 60;
+-- 3. Populate Time Dimension (one row per date and hour that has trips).
+-- NOT EXISTS keeps re-runs from adding duplicate rows.
+INSERT INTO dim_time (full_date, year, month, day, day_of_week, hour, is_weekend)
+SELECT d.full_date,
+    YEAR(d.full_date),
+    MONTH(d.full_date),
+    DAY(d.full_date),
+    DAYNAME(d.full_date),
+    d.hr,
+    DAYOFWEEK(d.full_date) IN (1, 7)
+FROM (
+        SELECT DISTINCT DATE(started_at) AS full_date,
+            HOUR(started_at) AS hr
+        FROM fact_trips
+    ) d
+WHERE NOT EXISTS (
+        SELECT 1
+        FROM dim_time t
+        WHERE t.full_date = d.full_date
+            AND t.hour = d.hr
+    );

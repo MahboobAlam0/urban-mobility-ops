@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("DB_Migration")
 
 # Config
-MYSQL_CONN = "mysql+pymysql://root:toor@localhost:3306/citibike"
+MYSQL_CONN = os.environ.get("CITIBIKE_DB_URL", "mysql+pymysql://root:toor@localhost:3306/citibike")
 SQLITE_DB = "citibike.db"
 SQLITE_CONN = f"sqlite:///{SQLITE_DB}"
 
@@ -29,8 +29,8 @@ def migrate():
 
     tables_to_migrate = [
         "dim_station", 
-        "fact_trips" 
-        # dim_time is not strictly used in current dashboard queries, but good to have
+        "fact_trips",
+        "dim_time"  # not used by the dashboard queries yet
     ]
 
     for table in tables_to_migrate:
